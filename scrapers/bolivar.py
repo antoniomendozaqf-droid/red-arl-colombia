@@ -4,7 +4,7 @@ import requests
 URL_BOLIVAR = (
     "https://www.segurosbolivar.com/arcgis/rest/services/"
     "ARL/seleccionProovedorARL/GPServer/"
-    "Seleccion%20proovedor%20ARL/execute"
+    "seleccionProovedor/execute"
 )
 
 
@@ -31,6 +31,15 @@ def consultar_bolivar(
         params=parametros,
         timeout=30
     )
+
+    print("URL consultada:")
+    print(respuesta.url)
+
+    print("Código HTTP:")
+    print(respuesta.status_code)
+
+    print("Respuesta cruda:")
+    print(respuesta.text)
 
     respuesta.raise_for_status()
 
