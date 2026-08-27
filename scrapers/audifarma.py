@@ -2,64 +2,91 @@ import requests
 from bs4 import BeautifulSoup
 
 
-URL_AUDIFARMA = "https://www.audifarma.com.co/inicio/red-de-farmacias"
+URL_AUDIFARMA = (
+    "https://encasa.audifarma.com.co/"
+    "formularioSeguimiento/faces/cafs.xhtml"
+)
 
 
 def inspeccionar_audifarma():
-    respuesta = requests.get(
-        URL_AUDIFARMA,
-        timeout=30,
-        headers={
-            "User-Agent": "Mozilla/5.0 RedARLColombia/1.0"
-        }
-    )
+    sesion = requests.Session()
 
-    print("HTTP:", respuesta.status_code)
+    headers = {
+        "User-Agent": (
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+            "AppleWebKit/537.36 (KHTML, like Gecko) "
+            "Chrome/120.0 Safari/537.36"
+        ),
+        "Accept": (
+            "text/html,application/xhtml+xml,"
+            "application/xml;q=0.9,*/*;q=0.8"
+        ),
+        "Accept-Language": "es-CO,es;q=0.9",
+    }
 
-    respuesta.raise_for_status()
-
-    soup = BeautifulSoup(respuesta.text, "html.parser")
-
-    print("\nFORMULARIOS:")
-    for form in soup.find_all("form"):
-        print("ACTION:", form.get("action"))
-        print("METHOD:", form.get("method"))
-
-    print("\nSELECTORES:")
-    for select in soup.find_all("select"):
-        print(
-            "name=", select.get("name"),
-            "id=", select.get("id")
+    try:
+        respuesta = sesion.get(
+            URL_AUDIFARMA,
+            headers=headers,
+            timeout=60
         )
 
-        opciones = []
+        print("URL FINAL:", respuesta.url)
+        print("HTTP:", respuesta.status_code)
+        print("CONTENT-TYPE:", respuesta.headers.get("content-type"))
 
-        for option in select.find_all("option"):
-            opciones.append(
-                {
-                    "texto": option.get_text(" ", strip=True),
-                    "value": option.get("value")
-                }
+        print("\nPRIMEROS 1000 CARACTERES:")
+        print(respuesta.text[:1000])
+
+        if respuesta.status_code != 200:
+            return
+
+        soup = BeautifulSoup(respuesta.text, "html.parser")
+
+        print("\nFORMULARIOS:")
+        for form in soup.find_all("form"):
+            print(
+                "id=", form.get("id"),
+                "action=", form.get("action"),
+                "method=", form.get("method")
             )
 
-        print(opciones[:30])
+        print("\nSELECTORES:")
 
-    print("\nSCRIPTS RELEVANTES:")
+        for select in soup.find_all("select"):
+            print(
+                "\nSELECT:",
+                "name=", select.get("name"),
+                "id=", select.get("id")
+            )
 
-    for script in soup.find_all("script", src=True):
-        src = script.get("src")
+            for option in select.find_all("option")[:50]:
+                print(
+                    "   ",
+                    option.get_text(" ", strip=True),
+                    "=>",
+                    option.get("value")
+                )
 
-        if any(
-            palabra in src.lower()
-            for palabra in [
-                "farm",
-                "red",
-                "search",
-                "consulta",
-                "api"
-            ]
-        ):
-            print(src)
+        print("\nINPUTS:")
+
+        for entrada in soup.find_all("input"):
+            print(
+                "type=", entrada.get("type"),
+                "name=", entrada.get("name"),
+                "id=", entrada.get("id"),
+                "value=", entrada.get("value")
+            )
+
+        print("\nSCRIPTS:")
+
+        for script in soup.find_all("script", src=True):
+            print(script.get("src"))
+
+    except Exception as error:
+        print("ERROR AL CONSULTAR AUDIFARMA:")
+        print(type(error).__name__)
+        print(str(error))
 
 
 if __name__ == "__main__":
